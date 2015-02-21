@@ -1,4 +1,4 @@
 # CDAE
-Collaborative Denoising AutoEncoder for Top-N Recommender Systems
+Collaborative Denoising Auto-Encoder for Top-N Recommender Systems
 
 Author: Yao Wu <wuyaow@sfu.ca>
