@@ -112,11 +112,11 @@ int main(int argc, char* argv[]) {
         } else {
           LOG(FATAL) << "UNKNOWN LOSS";
         }
-        NegMF bpr_model(config);
+        NegMF model(config);
         SGDConfig sgd_config;
         sgd_config.max_iteration = 300;
         sgd_config.learn_rate = FLAGS_learn_rate;
-        SGD<NegMF> sgd(bpr_model, sgd_config);
+        SGD<NegMF> sgd(model, sgd_config);
         sgd.train(train, test, {TOPN});
       }
     }
@@ -138,11 +138,11 @@ int main(int argc, char* argv[]) {
         } else {
           LOG(FATAL) << "UNKNOWN LOSS";
         }
-        BPR_MF bpr_model(config);
+        BPR_MF model(config);
         SGDConfig sgd_config;
         sgd_config.max_iteration = 300;
         sgd_config.learn_rate = FLAGS_learn_rate;
-        SGD<BPR_MF> sgd(bpr_model, sgd_config);
+        SGD<BPR_MF> sgd(model, sgd_config);
         sgd.train(train, test, {TOPN});
       }
     }
@@ -156,11 +156,11 @@ int main(int argc, char* argv[]) {
         config.num_neg = FLAGS_num_neg;
         config.using_adagrad = FLAGS_adagrad;
         config.lt = SQUARE; 
-        FISM bpr_model(config);
+        FISM model(config);
         SGDConfig sgd_config;
         sgd_config.max_iteration = 300;
         sgd_config.learn_rate = FLAGS_learn_rate;
-        SGD<FISM> sgd(bpr_model, sgd_config);
+        SGD<FISM> sgd(model, sgd_config);
         sgd.train(train, test, {TOPN});
       }
     }
