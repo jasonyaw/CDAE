@@ -62,18 +62,19 @@ class Data {
   friend std::ostream& operator<< (std::ostream& stream, 
                                    const Data& data);
  public:
+  
   Data() = default;
   Data(const Data&) = default;
+
   Data(const std::vector<Instance>& ins_vec,
        const std::shared_ptr<DataInfo>& data_info) :
-      instances_(ins_vec), data_info_(data_info) 
-  {}
-  //Data(Data&&) = default;
+      instances_(ins_vec), data_info_(data_info) {}
   
   Data(std::vector<Instance>&& ins_vec,
        const std::shared_ptr<DataInfo>& data_info) :
-      instances_(std::move(ins_vec)), data_info_(data_info) 
-  {}
+      instances_(std::move(ins_vec)), data_info_(data_info) {}
+
+  Data(const std::shared_ptr<DataInfo>& data_info) : data_info_(data_info) {}
 
   Data& operator= (const Data&) = default;
 
@@ -84,7 +85,7 @@ class Data {
             bool skip_header = false);
 
   void set_label_type(const LabelType& lt) {
-    CHECK_EQ(lt, CONTINUOUS);
+    //CHECK_EQ(lt, CONTINUOUS);
     data_info_->label_info_ = FeatureGroupInfo(DENSE);
   }
 
@@ -120,7 +121,11 @@ class Data {
     CHECK(data_info_ != nullptr);
     return data_info_->feature_group_global_idx_[fg_idx];
   }
-  
+ 
+  std::shared_ptr<DataInfo> get_data_info() const {
+    return std::shared_ptr<DataInfo>(data_info_);
+  }
+
   // iterator
   const Instance* data() const { return instances_.data(); }
   Instance* data() { return instances_.data(); }

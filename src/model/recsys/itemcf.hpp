@@ -1,7 +1,7 @@
 #ifndef _LIBCF_ITEMCF_HPP_
 #define _LIBCF_ITEMCF_HPP_
 
-#include <unordered_set>
+#include <unordered_map>
 
 #include <model/recsys/similarity_base.hpp>
 
@@ -20,13 +20,14 @@ class ItemCF : public SimilarityBase {
   
 
   virtual std::vector<size_t> recommend(size_t uid, size_t topk,
-                                        const std::unordered_set<size_t>& rated_set) const {
+                                        const std::unordered_map<size_t, double>& rated_map) const {
 
     std::unordered_map<size_t, double> topk_rets;
 
-    for (auto& rated_iid : rated_set) {
+    for (auto& p : rated_map) {
+      auto& rated_iid = p.first;
       for (auto& item_sim_pair : topk_neighbors_[rated_iid]) {
-        if (rated_set.count(item_sim_pair.first)) 
+        if (rated_map.count(item_sim_pair.first)) 
           continue;
         if (topk_rets.count(item_sim_pair.first)) {
           topk_rets[item_sim_pair.first] += item_sim_pair.second;

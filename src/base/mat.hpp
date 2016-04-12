@@ -13,6 +13,8 @@ typedef ColVector<double> DVector;
 typedef RowVector<double> DRowVector;
 typedef ColVector<int>    IVector;
 typedef RowVector<int>    IRowVector;
+typedef ColVector<size_t> SVector;
+typedef RowVector<size_t> SRowVector;
 
 template<typename T> using Matrix 
     = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;

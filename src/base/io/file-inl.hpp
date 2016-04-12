@@ -10,10 +10,14 @@ File::File(const std::string& filename, const std::string& flag) : f_(new std::f
   if (flag == "r") {
     mode = std::ios::in;
   } else if (flag == "w") {
+    read_only = false;
     mode = std::ios::out;
   } else if (flag == "rb") {
+    is_binary = true;
     mode = std::ios::in | std::ios::binary;
   } else if (flag == "wb") {
+    is_binary = true;
+    read_only = false;
     mode = std::ios::out | std::ios::binary;
   } else {
     LOG(FATAL) << "Cannot open file " << filename << " ! "
@@ -35,30 +39,37 @@ size_t File::size() const {
   return length;
 }
 
-void File::read_line(std::string& line, char delim) const {
+bool File::read_line(std::string& line, char delim) const {
+  CHECK_EQ(read_only, true);
   if (good()) {
     std::getline(*f_, line, delim);
   }
+  return ok();
 }
 
 std::string File::read_line(char delim) const {
+  CHECK_EQ(read_only, true);
   std::string line;
   read_line(line, delim);
   return std::move(line);
 }
 
-void File::write(const std::string& line) const {
+bool File::write_str(const std::string& line) const {
+  CHECK_EQ(read_only, false);
   if(good()){
     f_->write(line.c_str(), line.size());
   }
+  return ok();
 }
 
-void File::write_line(const std::string& line) const {
+bool File::write_line(const std::string& line) const {
+  CHECK_EQ(read_only, false);
   if(good()){
     f_->write(line.c_str(), line.size());
     if (line.back() != '\n') 
       f_->write("\n", 1);
   }
+  return ok();
 }
 } // namespace 
 

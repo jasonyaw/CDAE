@@ -2,7 +2,7 @@
 #define _LIBCF_SIMILARITY_BASE_HPP_
 
 #include <base/parallel.hpp>
-#include <model/model_base.hpp>
+#include <model/recsys/recsys_model_base.hpp>
 
 namespace libcf {
 
@@ -27,7 +27,7 @@ std::ostream& operator<< (std::ostream& out, const SimilarityType& st) {
  *  TODO:
  *   - [] support Ratings
  */
-class SimilarityBase : public ModelBase {
+class SimilarityBase : public RecsysModelBase {
 
  public:
 
@@ -40,7 +40,7 @@ class SimilarityBase : public ModelBase {
   }
 
   virtual void reset(const Data& data_set) {
-    data_ = std::make_shared<const Data>(data_set);
+    data_ = &data_set;
     Timer timer;
     CHECK_LT(index_feature_group_, data_set.num_feature_groups());
     CHECK_LT(data_feature_group_, data_set.num_feature_groups());
@@ -53,7 +53,7 @@ class SimilarityBase : public ModelBase {
       CHECK_LT(p.first, index_ind_stats.size());
       index_ind_stats[p.first] = p.second.size();  
     } 
-    topk_neighbors_.resize(index_ind_stats.size());
+    topk_neighbors_.assign(index_ind_stats.size(), {});
     //for (size_t idx = 0; idx < index_ind_stats.size(); idx++) {
     dynamic_parallel_for (0, index_ind_stats.size(), [&](size_t idx) {
         auto fit = index_data_pair.find(idx);
@@ -100,7 +100,7 @@ class SimilarityBase : public ModelBase {
   }
 
   virtual std::vector<size_t> recommend(size_t uid, size_t topk,
-                                        const std::unordered_set<size_t>& rated_items) const {
+                                        const std::unordered_map<size_t, double>& rated_items) const {
 
     LOG(FATAL) << "UnImplemented!";
     return std::vector<size_t>{};

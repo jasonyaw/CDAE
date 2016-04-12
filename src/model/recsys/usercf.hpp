@@ -1,7 +1,7 @@
 #ifndef _LIBCF_USERCF_HPP_
 #define _LIBCF_USERCF_HPP_ 
 
-#include <unordered_set>
+#include <unordered_map>
 
 #include <model/recsys/similarity_base.hpp>
 
@@ -19,7 +19,7 @@ class UserCF : public SimilarityBase {
   }
 
   virtual std::vector<size_t> recommend(size_t uid, size_t topk,
-                                        const std::unordered_set<size_t>& rated_set) const {
+                                        const std::unordered_map<size_t, double>& rated_map) const {
   
     
     CHECK_LT(uid, topk_neighbors_.size());
@@ -30,7 +30,7 @@ class UserCF : public SimilarityBase {
       CHECK(index_data_pair.count(user_sim_pair.first));
       auto& sim_index_data_pair = index_data_pair.at(user_sim_pair.first);    
       for (auto& item_id : sim_index_data_pair) {
-        if (rated_set.count(item_id)) 
+        if (rated_map.count(item_id)) 
           continue;
         if (topk_rets.count(item_id)) {
           topk_rets[item_id] += user_sim_pair.second;

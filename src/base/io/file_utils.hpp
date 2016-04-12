@@ -15,12 +15,28 @@ namespace libcf {
 inline std::vector<std::string> split_line(const std::string& line, 
                                     const std::string& delimiters = " ") {
   std::vector<std::string> rets;  
+  if (line.size() == 0) return rets;
   boost::char_separator<char> sep(delimiters.c_str());
   boost::tokenizer<boost::char_separator<char>> tokens(line, sep);
   for (auto it = tokens.begin(); it != tokens.end(); ++it){
     rets.push_back(*it);
   }
-  return std::move(rets);
+  return rets;
+}
+
+template<class Iterator>
+inline std::string join_iterators_with_separator(const Iterator& first,
+                                         const Iterator& last,
+                                         const std::string& delim = " ") {
+  size_t length = std::distance(first, last);
+  if (length == 0) return std::string(); 
+  
+  std::ostringstream oss;
+  for (size_t idx = 0; idx < length - 1; ++idx) {
+    oss << * (first + idx) << delim;
+  }
+  oss << *(first + length - 1);
+  return oss.str();
 }
 
 inline void write_config_file(const std::map<std::string, std::string>& opts, 
@@ -33,7 +49,7 @@ inline void write_config_file(const std::map<std::string, std::string>& opts,
     if (--opts_size > 0) {
       output += "\n";
     }
-    f.write(output);
+    f.write_str(output);
   }
   f.close();
 }
@@ -49,7 +65,7 @@ inline std::map<std::string, std::string> read_config_file(const std::string& fi
                         opts.emplace(splits[0], splits[1]);
                         });
   flr.load();
-  return std::move(opts);
+  return opts;
 }
 
 } // namespace

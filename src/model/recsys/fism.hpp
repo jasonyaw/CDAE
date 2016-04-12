@@ -1,7 +1,7 @@
 #ifndef _LIBCF_FISM_HPP_
 #define _LIBCF_FISM_HPP_
 
-#include <model/model_base.hpp>
+#include <model/recsys/recsys_model_base.hpp>
 
 namespace libcf {
 
@@ -26,11 +26,10 @@ struct FISMConfig {
  *  
  */
 
-class FISM : public ModelBase, public SGDBase{
+class FISM : public RecsysModelBase, public SGDBase{
  public:
   FISM(const FISMConfig& mcfg) 
-      : ModelBase(),
-      lambda_(mcfg.lambda), num_dim_(mcfg.num_dim), num_neg_(mcfg.num_neg), 
+      : lambda_(mcfg.lambda), num_dim_(mcfg.num_dim), num_neg_(mcfg.num_neg), 
       alpha_(mcfg.alpha),
       using_bias_term_(mcfg.using_bias_term),
       using_factor_term_(mcfg.using_factor_term),
@@ -54,23 +53,20 @@ class FISM : public ModelBase, public SGDBase{
   }
 
   virtual void reset(const Data& data_set) {
-    data_ = std::make_shared<const Data>(data_set);
-    num_users_ = data_set.feature_group_total_dimension(0);
-    num_items_ = data_set.feature_group_total_dimension(1);
-    user_rated_items_ = data_set.get_feature_to_set_hashtable(0, 1);
+    RecsysModelBase::reset(data_set);
 
     if (using_bias_term_) {
       bu_ = DVector::Zero(num_users_);
       bi_ = DVector::Zero(num_items_);
-      bu_grad_ = DVector::Zero(num_users_);
-      bi_grad_ = DVector::Zero(num_items_);
+      bu_grad_ = DVector::Ones(num_users_) * 0.0001;
+      bi_grad_ = DVector::Ones(num_items_) * 0.0001;
     }
 
     if (using_factor_term_) {
       p_ = DMatrix::Random(num_items_, num_dim_) * 0.001;
-      p_grad_ = DMatrix::Zero(num_items_, num_dim_);
+      p_grad_ = DMatrix::Constant(num_items_, num_dim_, 0.0001);
       q_ = DMatrix::Random(num_items_, num_dim_) * 0.001;
-      q_grad_ = DMatrix::Zero(num_items_, num_dim_);
+      q_grad_ = DMatrix::Constant(num_items_, num_dim_, 0.0001);
       x_ = DMatrix::Zero(num_users_, num_dim_);
       for (size_t uid = 0; uid < num_users_; uid++) {
         auto fit = user_rated_items_.find(uid);
@@ -81,7 +77,7 @@ class FISM : public ModelBase, public SGDBase{
       }
     }
 
-    global_mean_ = 0;
+    global_mean_ = 0.;
 
     if (using_global_mean_ && data_set.size() > 0) {
       for (auto iter = data_set.begin(); iter != data_set.end(); ++iter) {
@@ -92,16 +88,13 @@ class FISM : public ModelBase, public SGDBase{
     }
   }
 
-  virtual double penalty_loss() const {
-    return 0.0;
-  }
-
   virtual void update_one_sgd_step(const Instance& ins, double step_size) {
     update_one_instance(ins, step_size);
     size_t uid = ins.get_feature_group_index(0, 0);
-
+    auto fit = user_rated_items_.find(uid);
+    CHECK(fit != user_rated_items_.end());
     for (size_t idx = 0; idx < num_neg_; idx++) {
-      size_t iid = sample_negative_item(uid);
+      size_t iid = sample_negative_item(fit->second);
       Instance neg_ins;
       neg_ins.add_feat_group(std::vector<size_t>{uid});
       neg_ins.add_feat_group(std::vector<size_t>{iid});
@@ -175,16 +168,16 @@ class FISM : public ModelBase, public SGDBase{
 
   // required by evaluation measure TOPN
   virtual std::vector<size_t> recommend(size_t uid, size_t topk,
-                                        const std::unordered_set<size_t>& rated_item_set) const {
+                                        const std::unordered_map<size_t, double>& rated_item_map) const {
     size_t item_id = 0;
     size_t item_id_end = item_id + data_->feature_group_total_dimension(1);
     
-    double scale = 1. / static_cast<double>(std::pow(rated_item_set.size(), alpha_));
+    double scale = 1. / static_cast<double>(std::pow(rated_item_map.size(), alpha_));
 
     Heap<std::pair<size_t, double>> topk_heap(sort_by_second_desc<size_t, double>, topk);
     double pred;
     for (; item_id != item_id_end; ++item_id) {
-      if (rated_item_set.count(item_id)) {
+      if (rated_item_map.count(item_id)) {
         continue;
       }
       pred = bu_(uid) + bi_(item_id) + scale * x_.row(uid).dot(q_.row(item_id));
@@ -224,26 +217,6 @@ class FISM : public ModelBase, public SGDBase{
     return ret;
   }
 
-  virtual double regularization_coefficent() const {
-    return lambda_;
-  }
-
-  size_t sample_negative_item(size_t uid) const {
-    auto fit = user_rated_items_.find(uid);
-    CHECK(fit != user_rated_items_.end());
-    auto& user_rated_items = fit->second;
-    size_t random_item;
-    while(true) {
-      random_item = rand() % num_items_;
-      if (user_rated_items.count(random_item)) {
-        continue;
-      } else {
-        break;
-      }
-    }
-    return random_item;
-  }
-
  protected:
 
   DVector bu_, bi_;
@@ -253,10 +226,6 @@ class FISM : public ModelBase, public SGDBase{
   DMatrix q_; // q in the paper
   DMatrix q_grad_; // q in the paper
   DMatrix x_; // x in the paper
-
-  std::unordered_map<size_t, std::unordered_set<size_t>> user_rated_items_;  
-
-  size_t num_users_ = 0, num_items_ = 0;
 
   double lambda_ = 0;
   size_t num_dim_ = 0;
