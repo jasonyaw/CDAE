@@ -4,20 +4,20 @@
 namespace libcf {
 
 void LinearModel::reset(const Data& data_set) {
-  data_ = std::make_shared<const Data>(data_set);
+  ModelBase::reset(data_set);
 
-  coefficients_ = DMatrix::Random(data_set.total_dimensions(), 1) * 0.01;
+  coefficients_ = DMatrix::Random(data_->total_dimensions(), 1) * 0.01;
 
   if (using_adagrad_) { 
-    gradient_square_ = DMatrix::Zero(data_set.total_dimensions(), 1);
+    gradient_square_ = DMatrix::Zero(data_->total_dimensions(), 1);
   }
 
   global_mean_ = 0;
-  for (auto iter = data_set.begin(); iter != data_set.end(); ++iter) {
+  for (auto iter = data_->begin(); iter != data_->end(); ++iter) {
     global_mean_ += iter->label();
   }
 
-  global_mean_ /= data_set.size();
+  global_mean_ /= data_->size();
   LOG(INFO) << "Global mean score is " << global_mean_;
 }
 

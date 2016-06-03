@@ -52,6 +52,12 @@ FeatureGroup::FeatureGroup(FeatureGroupInfo& fg_info,
   if (fg_info.feature_type() == DENSE) {
     // format: 1 2 4 5 6 7 
     feat_vals.resize(values.size());
+    if (fg_info.size() == 0) {
+      fg_info.set_length(values.size());
+    } else {
+      CHECK_EQ(fg_info.size(), values.size());
+    }
+
     std::transform(values.begin(), 
                    values.end(),
                    feat_vals.begin(),
@@ -86,7 +92,11 @@ FeatureGroup::FeatureGroup(FeatureGroupInfo& fg_info,
 
 FeatureGroup::FeatureGroup(FeatureGroupInfo& fg_info, const std::vector<double>& vec) {
   CHECK_EQ(fg_info.feature_type(), DENSE);
-  fg_info.set_length(std::max(vec.size(), fg_info.size()));
+  if (fg_info.size() == 0) {
+    fg_info.set_length(vec.size());
+  } else {
+    CHECK_EQ(fg_info.size(), vec.size());
+  }
   ft_ = DENSE;
   feat_vals.assign(vec.begin(), vec.end());
 }
@@ -177,9 +187,9 @@ std::ostream& operator<< (std::ostream& stream,
                           const Instance& ins) {
   size_t fg_idx = 0;
   stream << "{Label: " << ins.label_ << "}, " << "{Feature Groups: ["; 
-  for(auto& fg : ins.feat_g_) {
+  for(auto& fg : ins.feat_groups_) {
     stream << "{" << fg_idx << ": " << fg << "}";
-    if (fg_idx < ins.feat_g_.size() - 1) stream << ", ";
+    if (fg_idx < ins.feat_groups_.size() - 1) stream << ", ";
     ++fg_idx;
   }
   stream << "]";

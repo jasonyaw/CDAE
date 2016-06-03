@@ -5,18 +5,18 @@ SRC_DIR = ../../src
 
 CXX = g++
 CFLAGS = -O3 -g -std=c++11 #-shared -fPIC
-LDFLAGS= -lpthread -lboost_serialization -lboost_iostreams -lglog -lgflags 
+LDFLAGS= -lpthread -lboost_serialization-mt -lboost_iostreams-mt -lglog -lgflags 
 INCLUDE = -I$(SRC_DIR) -I$(BOOST_DIR)/include 
 LIBS = -L$(BOOST_DIR)/lib -Wl,-rpath $(BOOST_DIR)/lib 
 
-BIN =  yelp_implicit 
-SOURCES = yelp_implicit.cpp
+BIN =  yelp 
+SOURCES = yelp.cpp
 OBJ = $(SOURCES:.cpp=.o)
 
 all:  $(BIN) 
 
-yelp_implicit : yelp_implicit.o 
-	$(CXX) $(CFLAGS) $(INCLUDE) $(LIBS) yelp_implicit.o -o $@  $(LDFLAGS) 
+yelp : yelp.o 
+	$(CXX) $(CFLAGS) $(INCLUDE) $(LIBS) yelp.o -o $@  $(LDFLAGS) 
 
 .cpp.o: 
 	$(CXX) $(INCLUDE) -c $(CFLAGS) $< -o $@ 

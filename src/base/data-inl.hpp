@@ -6,6 +6,7 @@
 #include <base/io.hpp>
 #include <base/timer.hpp>
 #include <base/utils.hpp>
+#include <base/random.hpp>
 
 namespace libcf {
 
@@ -16,9 +17,25 @@ void Data::load(const std::string& filename,
   if (data_info_ == nullptr) {
     data_info_ = std::make_shared<DataInfo>(new DataInfo());
   }
+
   switch (df) {
     case VECTOR : {
-      //TODO
+      FileLineReader f(filename);
+      add_feature_group(DENSE);
+      set_label_type(EMPTY);
+      f.set_line_callback(
+         [&](const std::string& line, size_t line_num) {
+          if (skip_header && line_num == 0) return;
+          auto rets = parser(line);
+          if (rets.size() == 0) return;
+          Instance ins;
+          std::vector<double> vec(rets.size());
+          std::transform(rets.begin(), rets.end(), vec.begin(),
+            [&](const std::string& str) { return std::stod(str); });
+          ins.add_feat_group(data_info_->feature_group_infos_[0], vec);
+          instances_.push_back(ins);
+        });
+      f.load();
       break; 
     }
     case LIBSVM : {
@@ -51,7 +68,7 @@ void Data::load(const std::string& filename,
   }
 
   data_info_->total_dimensions_ = 0;
-  data_info_->feature_group_global_idx_.resize(num_feature_groups(), 0);
+  data_info_->feature_group_global_idx_.assign(num_feature_groups(), 0);
   size_t idx = 0;
   for (auto& fg_info : data_info_->feature_group_infos_) {
     data_info_->feature_group_global_idx_[idx++] = data_info_->total_dimensions_;
@@ -76,7 +93,7 @@ std::ostream& operator<< (std::ostream& stream, const Data& data) {
   stream << "]\n";
   size_t idx = 0;
   for (auto& fg_info : data.data_info_->feature_group_infos_) {
-    stream << "\tFeature group " << idx++ << "-> " << fg_info << std::endl;
+    stream << "\tFeature group " << idx++ << " -> " << fg_info << std::endl;
   }
   stream << "Head of the data set:\n"; 
   size_t num_lines = std::min(size_t{10}, data.instances_.size());
@@ -182,9 +199,7 @@ Data::instance_iterator Data::end(const Instance& ins) const {
 }
 
 void Data::shuffle_data() {
-  // TODO: random library
-  std::mt19937 r{std::random_device{}()};
-  std::shuffle(std::begin(instances_), std::end(instances_), r);
+  Random::shuffle(std::begin(instances_), std::end(instances_));
 }
 
 
@@ -197,8 +212,7 @@ void Data::random_split(Data& train, Data& test, double test_ratio) const {
 
   std::vector<size_t> index_vec(size(), 0);
   std::iota(index_vec.begin(), index_vec.end(), 0);
-  //std::mt19937 r{std::random_device{}()};
-  std::random_shuffle(std::begin(index_vec), std::end(index_vec)); 
+  Random::shuffle(std::begin(index_vec), std::end(index_vec)); 
 
   std::vector<Instance> train_ins_vec(num_train);
   for(size_t idx = 0; idx < num_train; ++idx) {
@@ -234,7 +248,7 @@ void Data::random_split_by_feature_group(Data& train, Data& test,
 
   for (auto iter = fg_idx_ins_idx_hashtable.begin(); iter != fg_idx_ins_idx_hashtable.end(); ++iter) {
     auto& tmp_vec = iter->second;
-    std::random_shuffle(std::begin(tmp_vec), std::end(tmp_vec));
+    Random::shuffle(std::begin(tmp_vec), std::end(tmp_vec));
     num_test = static_cast<size_t>(tmp_vec.size() * test_ratio);
     for(size_t idx = 0; idx < tmp_vec.size(); ++idx) {
       if (idx < num_test) {
@@ -248,8 +262,8 @@ void Data::random_split_by_feature_group(Data& train, Data& test,
   CHECK_EQ(cnt, feature_group_total_dimension(feature_group_idx));
   CHECK_EQ(test_ins_vec.size() + train_ins_vec.size(), size());
 
-  std::random_shuffle(std::begin(train_ins_vec), std::end(train_ins_vec));
-  std::random_shuffle(std::begin(test_ins_vec), std::end(test_ins_vec));
+  Random::shuffle(std::begin(train_ins_vec), std::end(train_ins_vec));
+  Random::shuffle(std::begin(test_ins_vec), std::end(test_ins_vec));
 
   train = Data(std::move(train_ins_vec), data_info_);
   test = Data(std::move(test_ins_vec), data_info_);
@@ -276,7 +290,7 @@ void Data::inplace_random_split_by_feature_group(Data& train, Data& test,
 
   for (auto iter = fg_idx_ins_idx_hashtable.begin(); iter != fg_idx_ins_idx_hashtable.end(); ++iter) {
     auto& tmp_vec = iter->second;
-    std::random_shuffle(std::begin(tmp_vec), std::end(tmp_vec));
+    Random::shuffle(std::begin(tmp_vec), std::end(tmp_vec));
     num_test = static_cast<size_t>(tmp_vec.size() * test_ratio);
     for(size_t idx = 0; idx < tmp_vec.size(); ++idx) {
       if (idx < num_test) {
@@ -290,8 +304,8 @@ void Data::inplace_random_split_by_feature_group(Data& train, Data& test,
   CHECK_EQ(cnt, feature_group_total_dimension(feature_group_idx));
   CHECK_EQ(test_ins_vec.size() + train_ins_vec.size(), size());
 
-  std::random_shuffle(std::begin(train_ins_vec), std::end(train_ins_vec));
-  std::random_shuffle(std::begin(test_ins_vec), std::end(test_ins_vec));
+  Random::shuffle(std::begin(train_ins_vec), std::end(train_ins_vec));
+  Random::shuffle(std::begin(test_ins_vec), std::end(test_ins_vec));
 
   train = Data(std::move(train_ins_vec), data_info_);
   test = Data(std::move(test_ins_vec), data_info_);
@@ -364,7 +378,7 @@ Data::get_feature_to_vec_hashtable(size_t feature_group_idx_a,
   auto rets = get_feature_ins_idx_hashtable(feature_group_idx_a);
   std::vector<size_t> tmp_vec;
   for (auto outer_iter = rets.begin(); outer_iter != rets.end(); ++outer_iter) {
-    tmp_vec.resize(outer_iter->second.size(), 0);
+    tmp_vec.assign(outer_iter->second.size(), 0);
     size_t idx = 0;
     for (auto& v : outer_iter->second) {
       tmp_vec[idx++] = instances_[v].get_feature_group_index(feature_group_idx_b, 0);// + feature_group_start_idx(feature_group_idx_b);

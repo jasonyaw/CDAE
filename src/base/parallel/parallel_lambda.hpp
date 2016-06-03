@@ -73,8 +73,8 @@ inline void parallel_for(const size_t first, const size_t last,
   size_t length = last - first;
   
   in_parallel([&](size_t thread_id, size_t num_threads){
-    size_t begin = first + thread_id * length / num_threads;
-    size_t end = first + (thread_id + 1) * length / num_threads;
+    size_t begin = first + (thread_id * length) / num_threads;
+    size_t end = first + ((thread_id + 1) * length) / num_threads;
     for (size_t idx = begin; idx < end; idx++) {
       fn(idx);
     }
@@ -97,8 +97,8 @@ inline void parallel_for_each(const Iterator& first, const Iterator& last,
   size_t length= std::distance(first, last);
   
   in_parallel([&](size_t thread_id, size_t num_threads){
-    Iterator begin = first + (thread_id * length / num_threads);
-    Iterator end = first + ((thread_id + 1) * length / num_threads);
+    Iterator begin = first + (thread_id * length) / num_threads;
+    Iterator end = first + ((thread_id + 1) * length) / num_threads;
     std::for_each<Iterator>(begin, end, std::cref(fn));
   });
 }
@@ -135,8 +135,8 @@ inline std::vector<T> parallel_accumulate(const size_t first,
   std::vector<T> results(n_threads);
    
   in_parallel([&](size_t thread_id, size_t num_threads){
-    size_t begin = first + thread_id * length / num_threads;
-    size_t end = first + (thread_id + 1) * length / num_threads;
+    size_t begin = first + (thread_id * length) / num_threads;
+    size_t end = first + ((thread_id + 1) * length) / num_threads;
     auto ret = init;
     for (size_t idx = begin; idx < end; idx++) {
       fn(idx, ret);
@@ -168,8 +168,8 @@ inline T parallel_accumulate_and_reduce(const size_t first,
   std::vector<T> results(n_threads);
    
   in_parallel([&](size_t thread_id, size_t num_threads){
-    size_t begin = first + thread_id * length / num_threads;
-    size_t end = first + (thread_id + 1) * length / num_threads;
+    size_t begin = first + (thread_id * length) / num_threads;
+    size_t end = first + ((thread_id + 1) * length) / num_threads;
     auto ret = init;
     for (size_t idx = begin; idx < end; idx++) {
       fn(ret, idx);

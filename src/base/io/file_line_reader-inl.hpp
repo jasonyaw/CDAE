@@ -11,9 +11,10 @@ void FileLineReader::load() {
   File f(filename_, "r");
   size_t line_num = 0;
   size_t line_skipped = 0;
-  while(f.good()) {
-    std::string line = f.read_line();
-    if(line.length() == 0) {
+  std::string line;
+  while (f.good()) {
+    f.read_line(line);
+    if (line.size() == 0) {
       ++line_skipped;
       continue;
     }
@@ -24,8 +25,7 @@ void FileLineReader::load() {
   loaded_successfully_ = true;
   LOG(INFO) << line_num << " lines loaded from file " << filename_ 
       << " in " << t ; 
-  LOG(INFO) << "\t" << line_num - line_skipped << " lines loaded successfully. "
-      << line_skipped << " lines skipped" << std::endl; 
+  LOG(INFO) << line_skipped << " lines skipped" << std::endl; 
 }
 
 } // namespace

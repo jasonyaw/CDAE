@@ -1,7 +1,7 @@
 #ifndef _LIBCF_FISMP_HPP_
 #define _LIBCF_FISMP_HPP_
 
-#include <model/model_base.hpp>
+#include <model/recsys_model_base.hpp>
 
 namespace libcf {
 
@@ -26,11 +26,10 @@ struct FISMPConfig {
  *  
  */
 
-class FISMP : public ModelBase, public SGDBase {
+class FISMP : public RecsysModelBase, public SGDBase {
  public:
   FISMP(const FISMPConfig& mcfg) 
-      : ModelBase(),
-      lambda_(mcfg.lambda), num_dim_(mcfg.num_dim), num_neg_(mcfg.num_neg), 
+      : lambda_(mcfg.lambda), num_dim_(mcfg.num_dim), num_neg_(mcfg.num_neg), 
       alpha_(mcfg.alpha),
       using_bias_term_(mcfg.using_bias_term),
       using_factor_term_(mcfg.using_factor_term),
@@ -55,11 +54,7 @@ class FISMP : public ModelBase, public SGDBase {
   }
 
   virtual void reset(const Data& data_set) {
-    data_ = std::make_shared<const Data>(data_set);
-    num_users_ = data_set.feature_group_total_dimension(0);
-    num_items_ = data_set.feature_group_total_dimension(1);
-
-    user_rated_items_ = data_set.get_feature_to_set_hashtable(0, 1);
+    RecsysModelBase::reset(data_set);
 
     if (using_bias_term_) {
       bu_ = DVector::Zero(num_users_);
@@ -108,9 +103,12 @@ class FISMP : public ModelBase, public SGDBase {
     size_t jid;
 
     double pred = predict(ins);
+    
+    auto fit = user_rated_items_.find(uid);
+    CHECK(fit != user_rated_items_.end());
 
     for (size_t idx = 0; idx < num_neg_; ++ idx) {
-      jid = sample_negative_item(uid);
+      jid = sample_negative_item(fit->second);
       
       double pred_neg = predict_user_item_rating(uid, jid);
 
@@ -181,26 +179,6 @@ class FISMP : public ModelBase, public SGDBase {
     return ret;
   }
 
-  virtual double regularization_coefficent() const {
-    return lambda_;
-  }
-
-  size_t sample_negative_item(size_t uid) const {
-    auto fit = user_rated_items_.find(uid);
-    CHECK(fit != user_rated_items_.end());
-    auto& user_rated_items = fit->second;
-    size_t random_item;
-    while(true) {
-      random_item = rand() % num_items_;
-      if (user_rated_items.count(random_item)) {
-        continue;
-      } else {
-        break;
-      }
-    }
-    return random_item;
-  }
-
  protected:
 
   DVector bu_, bi_;
@@ -210,10 +188,6 @@ class FISMP : public ModelBase, public SGDBase {
   DMatrix q_; // q in the paper
   DMatrix q_grad_; // q in the paper
   DMatrix x_; // x in the paper
-
-  std::unordered_map<size_t, std::unordered_set<size_t>> user_rated_items_;  
-
-  size_t num_users_ = 0, num_items_ = 0;
 
   double lambda_ = 0;
   size_t num_dim_ = 0;

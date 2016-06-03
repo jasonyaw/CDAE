@@ -8,7 +8,7 @@ void Solver<Model>::train(const Data& train_data,
                               const std::vector<EvalType>& eval_types) {
 
 
-  double train_loss = std::numeric_limits<double>::max();
+  double train_loss = 0;
 
   std::vector<std::shared_ptr<Evaluation<Model>>> evaluations(eval_types.size());
   for (size_t idx = 0; idx < eval_types.size(); ++idx) {
@@ -21,19 +21,31 @@ void Solver<Model>::train(const Data& train_data,
 
   Timer t;
   
-  LOG(INFO) << std::string(100, '-') << std::endl;
+  LOG(INFO) << std::string(110, '-') << std::endl;
   {
     std::stringstream ss;
     ss << std::setfill(' ') << std::setw(5) << "Iters" << "|"
-        << std::setw(8) << "Time"  << "|"
+        << std::setw(8) << "Time"  << "|" 
         << std::setw(10) << "Train Loss" << "|";
     if(validation_data.size() > 0) {
       for (size_t idx = 0; idx < eval_types.size(); ++idx) 
         ss << evaluations[idx]->evaluation_type() << "|";
-    }
+    } 
     LOG(INFO) << ss.str();
   }
 
+  if (iteration % eval_iterations == 0)
+  {
+    std::stringstream ss;
+    ss << std::setw(5) << iteration << "|"
+        << std::setw(8) << std::setprecision(3) << t.elapsed() << "|"
+        << std::setw(10) << std::setprecision(5) << train_loss << "|";
+    if (validation_data.size() > 0) {
+      for (size_t idx = 0; idx < eval_types.size(); ++idx) 
+        ss << evaluations[idx]->evaluate(*model_, validation_data, train_data) << "|";
+    }
+    LOG(INFO) << ss.str();
+  }
 
   bool stop = false;
   while(!stop) {
@@ -41,8 +53,9 @@ void Solver<Model>::train(const Data& train_data,
     train_one_iteration(train_data);
 
     train_loss = model_->current_loss(train_data);
-    
+
     iteration ++;
+    if (iteration % eval_iterations == 0)
     {
       std::stringstream ss;
       ss << std::setw(5) << iteration << "|"
@@ -62,12 +75,12 @@ void Solver<Model>::train(const Data& train_data,
     // other conditions
   }
 
-  LOG(INFO) << std::string(100, '-') << std::endl;
+  LOG(INFO) << std::string(110, '-') << std::endl;
 }
 
 template<class Model>
 void Solver<Model>::test(const Data& test_data,
-                             const std::vector<EvalType>& eval_types) {
+                         const std::vector<EvalType>& eval_types) {
 
   Timer t;
   std::vector<std::shared_ptr<Evaluation<Model>>> evaluations(eval_types.size());
@@ -96,9 +109,6 @@ void Solver<Model>::test(const Data& test_data,
     }
     LOG(INFO) << ss.str();
   }
-
 }
-
-
 
 } // namespace

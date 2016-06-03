@@ -38,28 +38,28 @@ class FeatureGroupInfo {
   friend class boost::serialization::access;
   template<class Archive>
       void save(Archive& ar, const unsigned int version) const {
-   ar & length_;
-      ar & feat_type_;
-      ar & raw_str_map_;
-      std::vector<std::pair<std::string, size_t>> data(
-          idx_map_.begin(), idx_map_.end());
-      ar & data;
+        ar & length_;
+        ar & feat_type_;
+        ar & raw_str_map_;
+        std::vector<std::pair<std::string, size_t>> data(
+            idx_map_.begin(), idx_map_.end());
+        ar & data;
       }
 
   template<class Archive>
       void load(Archive& ar, const unsigned int version) {
-   ar & length_;
-      ar & feat_type_;
-      ar & raw_str_map_;
-      std::vector<std::pair<std::string, size_t>> data;
-      ar & data;
-      idx_map_ = std::unordered_map<std::string, size_t>(
-          data.begin(), data.end());
+        ar & length_;
+        ar & feat_type_;
+        ar & raw_str_map_;
+        std::vector<std::pair<std::string, size_t>> data;
+        ar & data;
+        idx_map_ = std::unordered_map<std::string, size_t>(
+            data.begin(), data.end());
       }
 
   template<class Archive>
       void serialize(Archive& ar, const unsigned int version) {
-      boost::serialization::split_member(ar, *this, version);
+        boost::serialization::split_member(ar, *this, version);
       }
 
   friend std::ostream& operator<< (std::ostream& stream, 
@@ -82,12 +82,12 @@ class FeatureGroupInfo {
   void set_length(size_t length) { length_ = length; }
 
   FeatureType feature_type() const { return feat_type_; }
- 
+
  private:
 
   std::unordered_map<std::string, size_t> idx_map_;
   std::vector<std::string> raw_str_map_;
-  size_t length_;
+  size_t length_ = 0;
   enum FeatureType feat_type_;
 };
 
@@ -100,7 +100,7 @@ class FeatureGroup {
         ar & feat_ids;
         ar & feat_vals;
       }
- 
+
   friend std::ostream& operator<< (std::ostream& stream, 
                                    const FeatureGroup& fg);
  public:
@@ -115,10 +115,10 @@ class FeatureGroup {
   FeatureGroup(FeatureGroupInfo& fg_info, const std::vector<std::pair<size_t, double>>& vec);
 
   size_t size() const; 
-  
+
   size_t index(size_t idx) const;
   double value(size_t idx) const;
-  
+
  private:
   FeatureType ft_;
   std::vector<size_t> feat_ids;
@@ -130,11 +130,11 @@ class Instance {
   friend class boost::serialization::access;
   template<class Archive> 
       void serialize(Archive& ar, const unsigned int version) {
-        ar & feat_g_;
+        ar & feat_groups_;
         ar & label_;
         ar & size_;
       }
-  
+
   friend std::ostream& operator<< (std::ostream& stream,
                                    const Instance& ins);
  public:
@@ -146,45 +146,46 @@ class Instance {
 
   void add_feat_group(FeatureGroupInfo& fg_info,
                       const std::string& str) {
-    feat_g_.push_back(FeatureGroup(fg_info, str));   
-    size_ += feat_g_.back().size();
+    feat_groups_.push_back(FeatureGroup(fg_info, str));   
+    size_ += feat_groups_.back().size();
   }
 
   void add_feat_group(const std::vector<double>& vec) {
     FeatureGroupInfo fg_info(DENSE); 
-    feat_g_.push_back(FeatureGroup(fg_info, vec));   
-    size_ += feat_g_.back().size();
+    feat_groups_.push_back(FeatureGroup(fg_info, vec));   
+    size_ += feat_groups_.back().size();
   }
 
   void add_feat_group(const std::vector<size_t>& vec) {
     FeatureGroupInfo fg_info(SPARSE_BINARY); 
-    feat_g_.push_back(FeatureGroup(fg_info, vec));   
-    size_ += feat_g_.back().size();
+    feat_groups_.push_back(FeatureGroup(fg_info, vec));   
+    size_ += feat_groups_.back().size();
   }
 
   void add_feat_group(const std::vector<std::pair<size_t, double>>& vec) {
     FeatureGroupInfo fg_info(SPARSE); 
-    feat_g_.push_back(FeatureGroup(fg_info, vec));   
-    size_ += feat_g_.back().size();
+    feat_groups_.push_back(FeatureGroup(fg_info, vec));   
+    size_ += feat_groups_.back().size();
   }
 
   void add_feat_group(FeatureGroupInfo& fg_info,
                       const std::vector<double>& vec) {
-    feat_g_.push_back(FeatureGroup(fg_info, vec));   
-    size_ += feat_g_.back().size();
+    feat_groups_.push_back(FeatureGroup(fg_info, vec));   
+    size_ += feat_groups_.back().size();
   }
 
   void add_feat_group(FeatureGroupInfo& fg_info,
                       const std::vector<size_t>& vec) {
-    feat_g_.push_back(FeatureGroup(fg_info, vec));   
-    size_ += feat_g_.back().size();
+    feat_groups_.push_back(FeatureGroup(fg_info, vec));   
+    size_ += feat_groups_.back().size();
   }
 
   void add_feat_group(FeatureGroupInfo& fg_info,
                       const std::vector<std::pair<size_t, double>>& vec) {
-    feat_g_.push_back(FeatureGroup(fg_info, vec));   
-    size_ += feat_g_.back().size();
+    feat_groups_.push_back(FeatureGroup(fg_info, vec));   
+    size_ += feat_groups_.back().size();
   }
+
   //size_t get_id() const { return Instance_id_; }
   //void set_id(size_t ins_id) { Instance_id_ = ins_id; }
 
@@ -192,7 +193,7 @@ class Instance {
   void set_label(double label) { label_ = label; }
 
   friend void swap(Instance& a, Instance& b) {
-    std::swap(a.feat_g_, b.feat_g_);
+    std::swap(a.feat_groups_, b.feat_groups_);
     std::swap(a.label_, b.label_);
     std::swap(a.size_, b.size_);
   }
@@ -200,23 +201,24 @@ class Instance {
   size_t size() const { return size_; }
 
   size_t num_feature_groups() const {
-    return feat_g_.size();
+    return feat_groups_.size();
   }
 
   size_t feature_group_size(size_t fg_idx) const {
-    return feat_g_[fg_idx].size();
+    return feat_groups_[fg_idx].size();
   }
 
   size_t get_feature_group_index(size_t fg_idx, size_t idx) const {
-    return feat_g_[fg_idx].index(idx);
+    return feat_groups_[fg_idx].index(idx);
   }
 
   double get_feature_group_value(size_t fg_idx, size_t idx) const {
-    return feat_g_[fg_idx].value(idx);
+    return feat_groups_[fg_idx].value(idx);
   }
 
  private:
-  std::vector<FeatureGroup> feat_g_;
+
+  std::vector<FeatureGroup> feat_groups_;
   double label_ = 0;
   size_t size_ = 0;
   //size_t Instance_id_;

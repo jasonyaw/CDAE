@@ -3,7 +3,8 @@
 namespace libcf {
 
 void FactorModel::reset(const Data& data_set) {
-  data_ = std::make_shared<const Data>(data_set);
+  
+  ModelBase::reset(data_set);
 
   if (using_bias_term_) {
     coefficients_ = DMatrix::Random(data_set.total_dimensions(), 1) * 0.01;

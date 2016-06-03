@@ -6,12 +6,19 @@
 #include <condition_variable>
 #include <future>
 
+#include <gflags/gflags.h>
+
+DEFINE_int32(num_thread, 1, "NUM OF THREADS");
+
 namespace libcf {
 
 //////////////////////////////////////////////
 // some global functions
 
 inline size_t num_hardware_threads() {
+  if (FLAGS_num_thread) {
+    return FLAGS_num_thread;
+  }
   return std::thread::hardware_concurrency();
 }
 

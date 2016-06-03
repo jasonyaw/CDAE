@@ -12,14 +12,18 @@ template<class Model>
 class Solver {
  public:
   
-  Solver(Model& model, size_t max_iteration) :
-      max_iteration_(max_iteration),
+  Solver(Model& model, size_t max_iteration, size_t eval_iterations=1) :
+      max_iteration_(max_iteration), eval_iterations(eval_iterations),
       model_(std::make_shared<Model>(model))
   {}
 
   Solver(Model& model) : Solver(model, 1)
   {}
   
+  std::shared_ptr<Model> get_model() {
+    return model_;
+  }
+
   virtual void pre_train(const Data&, const Data&) {
     // do nothing 
   }
@@ -37,6 +41,7 @@ class Solver {
 
  protected:
   size_t max_iteration_ = 1;
+  size_t eval_iterations = 1;
   std::shared_ptr<Model> model_;
 };
 
